@@ -1,31 +1,53 @@
 "use client";
 
+import { useRef } from "react";
 import Image from "next/image";
-import { motion } from "motion/react";
+import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import EmberField from "./EmberField";
 
 const GENRES = ["Drama", "Mystery", "Thriller"];
 const TICKETS_URL = "https://centurycinemax.co.ke/movie/show/garden/anam%27s_wake";
 
 export default function Hero() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 300,
+    damping: 40,
+    mass: 0.4,
+  });
+
+  const bgY = useTransform(progress, [0, 1], ["0%", "18%"]);
+  const contentOpacity = useTransform(progress, [0, 0.8], [1, 0]);
+  const contentY = useTransform(progress, [0, 1], [0, -60]);
+
   return (
     <section
+      ref={ref}
       id="hero"
       className="relative flex h-[100svh] min-h-[640px] w-full snap-start snap-always items-center justify-center overflow-hidden bg-void-950"
     >
-      <Image
-        src="/still-1.jpg"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover opacity-30"
-      />
+      <motion.div style={{ y: bgY }} className="absolute inset-0">
+        <Image
+          src="/still-1.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover opacity-30"
+        />
+      </motion.div>
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(138,35,49,0.14),transparent_60%)]" />
       <EmberField />
       <div className="absolute inset-0 bg-gradient-to-b from-void-950/70 via-void-950/50 to-void-950" />
 
-      <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
+      <motion.div
+        style={{ opacity: contentOpacity, y: contentY }}
+        className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-6 text-center"
+      >
         <motion.span
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -102,7 +124,7 @@ export default function Hero() {
             Watch Trailer
           </a>
         </motion.div>
-      </div>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}
