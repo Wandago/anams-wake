@@ -1,20 +1,24 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "motion/react";
 
 const BEATS = [
   {
-    glow: "rgba(224,180,102,0.10)",
+    image: "/still-2.jpg",
+    glow: "rgba(224,180,102,0.14)",
     kicker: "The Custom",
     line: "Death can be summoned — to negotiate for the dead.",
   },
   {
-    glow: "rgba(163,129,47,0.12)",
+    image: "/still-4.jpg",
+    glow: "rgba(163,129,47,0.16)",
     kicker: "The Guide",
     line: "A young mourner is sent to lead a wealthy family through the wake.",
   },
   {
-    glow: "rgba(138,35,49,0.22)",
+    image: "/still-6.jpg",
+    glow: "rgba(138,35,49,0.3)",
     kicker: "The Reveal",
     line: "But Death has come for more than their patriarch.",
     emphasis: true,
@@ -29,12 +33,23 @@ export default function DeathComes() {
           key={beat.kicker}
           className="relative flex min-h-[85vh] items-center justify-center overflow-hidden px-6"
         >
+          <Image
+            src={beat.image}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover opacity-25"
+          />
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0"
             style={{
               background: `radial-gradient(ellipse at center, ${beat.glow}, transparent 65%)`,
             }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-void-900/55"
           />
           <motion.div
             initial={{ opacity: 0, y: 36 }}
@@ -47,7 +62,7 @@ export default function DeathComes() {
               {String(i + 1).padStart(2, "0")} &mdash; {beat.kicker}
             </span>
             <p
-              className={`font-display text-3xl font-light leading-snug sm:text-4xl md:text-5xl ${
+              className={`font-display text-3xl font-light leading-snug text-shadow-glow sm:text-4xl md:text-5xl ${
                 beat.emphasis ? "text-wake-500" : "text-bone-100"
               }`}
             >

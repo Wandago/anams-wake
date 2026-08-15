@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "motion/react";
 import EmberField from "./EmberField";
 
@@ -8,9 +9,17 @@ const GENRES = ["Drama", "Mystery", "Thriller"];
 export default function Hero() {
   return (
     <section className="relative flex h-[100svh] min-h-[640px] w-full items-center justify-center overflow-hidden bg-void-950">
+      <Image
+        src="/still-1.jpg"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover opacity-30"
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(138,35,49,0.14),transparent_60%)]" />
       <EmberField />
-      <div className="absolute inset-0 bg-gradient-to-b from-void-950/40 via-transparent to-void-950" />
+      <div className="absolute inset-0 bg-gradient-to-b from-void-950/70 via-void-950/50 to-void-950" />
 
       <div className="relative z-10 mx-auto flex max-w-3xl flex-col items-center px-6 text-center">
         <motion.span

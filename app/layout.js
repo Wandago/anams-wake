@@ -15,10 +15,26 @@ const body = Inter({
   display: "swap",
 });
 
+const siteUrl = process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : "http://localhost:3000";
+
 export const metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Anam's Wake",
   description:
     "Death isn't the end, it's a negotiation. A Kenyan thriller: a young professional mourner is sent to guide a wealthy family through a wake, only to discover Death has come for more than their patriarch. Directed by Likarion Wainaina.",
+  openGraph: {
+    title: "Anam's Wake",
+    description: "Death isn't the end, it's a negotiation.",
+    images: ["/poster.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Anam's Wake",
+    description: "Death isn't the end, it's a negotiation.",
+    images: ["/poster.jpg"],
+  },
 };
 
 export const viewport = {
