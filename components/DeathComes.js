@@ -1,0 +1,61 @@
+"use client";
+
+import { motion } from "motion/react";
+
+const BEATS = [
+  {
+    glow: "rgba(224,180,102,0.10)",
+    kicker: "The Custom",
+    line: "Death can be summoned — to negotiate for the dead.",
+  },
+  {
+    glow: "rgba(163,129,47,0.12)",
+    kicker: "The Guide",
+    line: "A young mourner is sent to lead a wealthy family through the wake.",
+  },
+  {
+    glow: "rgba(138,35,49,0.22)",
+    kicker: "The Reveal",
+    line: "But Death has come for more than their patriarch.",
+    emphasis: true,
+  },
+];
+
+export default function DeathComes() {
+  return (
+    <section className="relative bg-void-900">
+      {BEATS.map((beat, i) => (
+        <div
+          key={beat.kicker}
+          className="relative flex min-h-[85vh] items-center justify-center overflow-hidden px-6"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse at center, ${beat.glow}, transparent 65%)`,
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 36 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            className="relative z-10 mx-auto max-w-3xl text-center"
+          >
+            <span className="mb-5 block text-[11px] uppercase tracking-widest2 text-ember-500">
+              {String(i + 1).padStart(2, "0")} &mdash; {beat.kicker}
+            </span>
+            <p
+              className={`font-display text-3xl font-light leading-snug sm:text-4xl md:text-5xl ${
+                beat.emphasis ? "text-wake-500" : "text-bone-100"
+              }`}
+            >
+              {beat.line}
+            </p>
+          </motion.div>
+        </div>
+      ))}
+    </section>
+  );
+}
