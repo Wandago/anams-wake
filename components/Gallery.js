@@ -15,8 +15,11 @@ const PHOTOS = [
 
 export default function Gallery() {
   return (
-    <section className="bg-void-950 px-6 py-28">
-      <div className="mx-auto max-w-5xl">
+    <section
+      id="gallery"
+      className="flex min-h-screen w-full snap-start flex-col justify-center bg-void-950 px-6 py-28"
+    >
+      <div className="mx-auto w-full max-w-5xl">
         <div className="text-center">
           <span className="text-[11px] uppercase tracking-widest2 text-ember-500">
             On Set

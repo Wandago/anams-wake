@@ -7,11 +7,13 @@ import Gallery from "@/components/Gallery";
 import Trailer from "@/components/Trailer";
 import Footer from "@/components/Footer";
 import SoundToggle from "@/components/SoundToggle";
+import ScrollDots from "@/components/ScrollDots";
 
 export default function Home() {
   return (
     <main className="relative">
       <Nav />
+      <ScrollDots />
       <Hero />
       <Poster />
       <DeathComes />

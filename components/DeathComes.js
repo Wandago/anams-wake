@@ -27,11 +27,11 @@ const BEATS = [
 
 export default function DeathComes() {
   return (
-    <section className="relative bg-void-900">
+    <section id="story" className="relative bg-void-900">
       {BEATS.map((beat, i) => (
         <div
           key={beat.kicker}
-          className="relative flex min-h-[85vh] items-center justify-center overflow-hidden px-6"
+          className="relative flex min-h-screen snap-start snap-always items-center justify-center overflow-hidden px-6"
         >
           <Image
             src={beat.image}

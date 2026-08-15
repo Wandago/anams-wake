@@ -7,7 +7,10 @@ const BRANCHES = ["Two Rivers", "Junction", "Garden City", "Sarit"];
 
 export default function Footer() {
   return (
-    <footer id="tickets" className="relative overflow-hidden bg-void-950 px-6 py-28">
+    <footer
+      id="tickets"
+      className="relative flex min-h-screen w-full snap-start flex-col justify-center overflow-hidden bg-void-950 px-6 py-28"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(224,180,102,0.08),transparent_70%)]"

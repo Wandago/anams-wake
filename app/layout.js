@@ -43,7 +43,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} snap-y snap-mandatory`}
+    >
       <body className="grain font-body antialiased">
         <div className="vignette" />
         {children}

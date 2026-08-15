@@ -23,8 +23,11 @@ const FILMMAKERS = [
 
 export default function Cast() {
   return (
-    <section id="cast" className="bg-void-900 px-6 py-28">
-      <div className="mx-auto max-w-5xl">
+    <section
+      id="cast"
+      className="flex min-h-screen w-full snap-start flex-col justify-center bg-void-900 px-6 py-28"
+    >
+      <div className="mx-auto w-full max-w-5xl">
         <div className="text-center">
           <span className="text-[11px] uppercase tracking-widest2 text-ember-500">
             Who Gathers

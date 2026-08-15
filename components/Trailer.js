@@ -6,8 +6,11 @@ const TRAILER_EMBED_URL = "https://www.youtube.com/embed/Oa21_322Wg8";
 
 export default function Trailer() {
   return (
-    <section id="trailer" className="bg-void-950 px-6 py-28">
-      <div className="mx-auto max-w-4xl text-center">
+    <section
+      id="trailer"
+      className="flex min-h-screen w-full snap-start flex-col justify-center bg-void-950 px-6 py-28"
+    >
+      <div className="mx-auto w-full max-w-4xl text-center">
         <span className="text-[11px] uppercase tracking-widest2 text-ember-500">
           Watch
         </span>

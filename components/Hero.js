@@ -9,7 +9,10 @@ const TICKETS_URL = "https://centurycinemax.co.ke/movie/show/garden/anam%27s_wak
 
 export default function Hero() {
   return (
-    <section className="relative flex h-[100svh] min-h-[640px] w-full items-center justify-center overflow-hidden bg-void-950">
+    <section
+      id="hero"
+      className="relative flex h-[100svh] min-h-[640px] w-full snap-start snap-always items-center justify-center overflow-hidden bg-void-950"
+    >
       <Image
         src="/still-1.jpg"
         alt=""

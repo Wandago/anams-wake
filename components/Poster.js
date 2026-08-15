@@ -5,7 +5,10 @@ import { motion } from "motion/react";
 
 export default function Poster() {
   return (
-    <section className="relative overflow-hidden bg-void-950 px-6 py-24">
+    <section
+      id="poster"
+      className="relative flex min-h-screen w-full snap-start flex-col items-center justify-center overflow-hidden bg-void-950 px-6 py-24"
+    >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(224,180,102,0.10),transparent_65%)]"
