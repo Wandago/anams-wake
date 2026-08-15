@@ -2,32 +2,51 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Ambient drone is synthesized in-browser (no licensed audio required):
-// two detuned low oscillators for a funereal hum, plus filtered noise for
-// an air/candle-flicker texture, both under a slow breathing LFO.
+// Everything here is synthesized in-browser — no licensed or downloaded
+// audio. A dissonant, slowly drifting drone (root + flat second + tritone,
+// the classic "wrong" intervals) under filtered wind noise, plus a sparse,
+// randomly-timed funeral bell run through a feedback delay for a tolling
+// tail. Fitting, given it's a wake.
 export default function SoundToggle() {
   const [on, setOn] = useState(false);
   const ctxRef = useRef(null);
   const nodesRef = useRef(null);
+  const bellTimeoutRef = useRef(null);
 
   const buildGraph = (ctx) => {
     const master = ctx.createGain();
     master.gain.value = 0;
     master.connect(ctx.destination);
 
-    const osc1 = ctx.createOscillator();
-    osc1.type = "sine";
-    osc1.frequency.value = 55;
-    const osc2 = ctx.createOscillator();
-    osc2.type = "triangle";
-    osc2.frequency.value = 55 * 1.5;
-
+    // Dissonant drone: root, a flat second above, and a tritone above.
     const droneGain = ctx.createGain();
-    droneGain.gain.value = 0.18;
-    osc1.connect(droneGain);
-    osc2.connect(droneGain);
+    droneGain.gain.value = 0.14;
     droneGain.connect(master);
 
+    const ratios = [1, 1.06, 1.414];
+    const oscs = ratios.map((ratio, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = i === 0 ? "sine" : "triangle";
+      osc.frequency.value = 41.2 * ratio; // low E-ish root
+      const voiceGain = ctx.createGain();
+      voiceGain.gain.value = i === 0 ? 1 : 0.55;
+      osc.connect(voiceGain);
+      voiceGain.connect(droneGain);
+
+      // Slow, slightly random detune drift per voice for unease.
+      const drift = ctx.createOscillator();
+      drift.frequency.value = 0.03 + Math.random() * 0.05;
+      const driftGain = ctx.createGain();
+      driftGain.gain.value = 4 + Math.random() * 4;
+      drift.connect(driftGain);
+      driftGain.connect(osc.detune);
+      drift.start();
+
+      osc.start();
+      return osc;
+    });
+
+    // Filtered noise "wind" with a slow breathing sweep on the filter.
     const bufferSize = 2 * ctx.sampleRate;
     const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = noiseBuffer.getChannelData(0);
@@ -39,26 +58,82 @@ export default function SoundToggle() {
     const noiseFilter = ctx.createBiquadFilter();
     noiseFilter.type = "bandpass";
     noiseFilter.frequency.value = 500;
-    noiseFilter.Q.value = 0.6;
+    noiseFilter.Q.value = 0.7;
     const noiseGain = ctx.createGain();
-    noiseGain.gain.value = 0.03;
+    noiseGain.gain.value = 0.035;
     noise.connect(noiseFilter);
     noiseFilter.connect(noiseGain);
     noiseGain.connect(master);
 
-    const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.08;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 0.06;
-    lfo.connect(lfoGain);
-    lfoGain.connect(droneGain.gain);
+    const filterLfo = ctx.createOscillator();
+    filterLfo.frequency.value = 0.05;
+    const filterLfoGain = ctx.createGain();
+    filterLfoGain.gain.value = 260;
+    filterLfo.connect(filterLfoGain);
+    filterLfoGain.connect(noiseFilter.frequency);
+    filterLfo.start();
 
-    osc1.start();
-    osc2.start();
+    // Slow breathing on the overall drone level.
+    const breathLfo = ctx.createOscillator();
+    breathLfo.frequency.value = 0.07;
+    const breathLfoGain = ctx.createGain();
+    breathLfoGain.gain.value = 0.05;
+    breathLfo.connect(breathLfoGain);
+    breathLfoGain.connect(droneGain.gain);
+    breathLfo.start();
+
+    // Feedback delay for the bell's tolling tail.
+    const delay = ctx.createDelay(2);
+    delay.delayTime.value = 0.38;
+    const feedback = ctx.createGain();
+    feedback.gain.value = 0.42;
+    const delayFilter = ctx.createBiquadFilter();
+    delayFilter.type = "lowpass";
+    delayFilter.frequency.value = 2200;
+    delay.connect(delayFilter);
+    delayFilter.connect(feedback);
+    feedback.connect(delay);
+    delay.connect(master);
+
+    const bellBus = ctx.createGain();
+    bellBus.gain.value = 0.5;
+    bellBus.connect(master);
+    bellBus.connect(delay);
+
     noise.start();
-    lfo.start();
 
-    return { master, osc1, osc2, noise, lfo };
+    return { master, oscs, noise, bellBus, panner: null };
+  };
+
+  const ringBell = (ctx, bellBus) => {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = 220 + Math.random() * 30;
+
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, now);
+    env.gain.linearRampToValueAtTime(0.22, now + 0.02);
+    env.gain.exponentialRampToValueAtTime(0.001, now + 5.5);
+
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = (Math.random() - 0.5) * 0.8;
+
+    osc.connect(env);
+    env.connect(panner);
+    panner.connect(bellBus);
+
+    osc.start(now);
+    osc.stop(now + 6);
+  };
+
+  const scheduleBell = () => {
+    const delayMs = 14000 + Math.random() * 22000;
+    bellTimeoutRef.current = setTimeout(() => {
+      if (!ctxRef.current || !nodesRef.current) return;
+      ringBell(ctxRef.current, nodesRef.current.bellBus);
+      scheduleBell();
+    }, delayMs);
   };
 
   const toggle = async () => {
@@ -76,11 +151,21 @@ export default function SoundToggle() {
       target,
       ctx.currentTime + 0.8
     );
+
+    if (next) {
+      ringBell(ctx, nodesRef.current.bellBus);
+      scheduleBell();
+    } else if (bellTimeoutRef.current) {
+      clearTimeout(bellTimeoutRef.current);
+      bellTimeoutRef.current = null;
+    }
+
     setOn(next);
   };
 
   useEffect(() => {
     return () => {
+      if (bellTimeoutRef.current) clearTimeout(bellTimeoutRef.current);
       ctxRef.current?.close?.();
     };
   }, []);
