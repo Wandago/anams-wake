@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import EmberField from "./EmberField";
 
 const GENRES = ["Drama", "Mystery", "Thriller"];
+const TICKETS_URL = "https://centurycinemax.co.ke/movie/show/garden/anam%27s_wake";
 
 export default function Hero() {
   return (
@@ -84,16 +85,18 @@ export default function Hero() {
           className="mt-10 flex flex-wrap items-center justify-center gap-4"
         >
           <a
-            href="#trailer"
+            href={TICKETS_URL}
+            target="_blank"
+            rel="noreferrer"
             className="rounded-full bg-ember-500 px-7 py-3 text-sm font-medium uppercase tracking-wide text-void-950 transition hover:bg-ember-400"
           >
-            Watch the Trailer
+            Get Tickets
           </a>
           <a
-            href="#tickets"
+            href="#trailer"
             className="rounded-full border border-bone-100/30 px-7 py-3 text-sm font-medium uppercase tracking-wide text-bone-100 transition hover:border-bone-100/70"
           >
-            About the Film
+            Watch Trailer
           </a>
         </motion.div>
       </div>

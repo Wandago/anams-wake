@@ -2,6 +2,9 @@
 
 import { motion } from "motion/react";
 
+const TICKETS_URL = "https://centurycinemax.co.ke/movie/show/garden/anam%27s_wake";
+const BRANCHES = ["Two Rivers", "Junction", "Garden City", "Sarit"];
+
 export default function Footer() {
   return (
     <footer id="tickets" className="relative overflow-hidden bg-void-950 px-6 py-28">
@@ -23,24 +26,24 @@ export default function Footer() {
           Anam&rsquo;s Wake
         </h2>
         <p className="mt-3 text-sm text-bone-500">
-          A Kenyan thriller directed by Likarion Wainaina.
+          Now showing at Century Cinemax &mdash; {BRANCHES.join(" · ")}.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <a
-            href="https://youtu.be/Oa21_322Wg8"
+            href={TICKETS_URL}
             target="_blank"
             rel="noreferrer"
             className="rounded-full bg-ember-500 px-8 py-3 text-sm font-medium uppercase tracking-wide text-void-950 transition hover:bg-ember-400"
           >
-            Watch Trailer
+            Get Tickets
           </a>
           <a
-            href="https://kenyabuzz.com/lifestyle/anams-wake-a-haunting-kenyan-thriller-about-the-grief-we-carry"
+            href="https://youtu.be/Oa21_322Wg8"
             target="_blank"
             rel="noreferrer"
             className="rounded-full border border-bone-100/30 px-8 py-3 text-sm font-medium uppercase tracking-wide text-bone-100 transition hover:border-bone-100/70"
           >
-            Read the Story
+            Watch Trailer
           </a>
         </div>
       </motion.div>

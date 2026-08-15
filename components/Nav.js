@@ -9,7 +9,7 @@ export default function Nav() {
       <div className="hidden gap-8 text-xs uppercase tracking-widest2 text-bone-300 sm:flex">
         <a href="#trailer" className="transition hover:text-ember-400">Trailer</a>
         <a href="#cast" className="transition hover:text-ember-400">Cast</a>
-        <a href="#tickets" className="transition hover:text-ember-400">More</a>
+        <a href="#tickets" className="transition hover:text-ember-400">Tickets</a>
       </div>
     </nav>
   );
