@@ -49,6 +49,22 @@ export default function Footer() {
             Watch Trailer
           </a>
         </div>
+
+        <div className="mx-auto mt-10 flex w-fit flex-col items-center gap-2">
+          <div className="overflow-hidden rounded-lg border border-bone-500/15 bg-void-900/60 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/qr-code.png"
+              alt="QR code linking to anams-wake.vercel.app"
+              width={88}
+              height={88}
+              className="h-20 w-20 sm:h-24 sm:w-24"
+            />
+          </div>
+          <span className="text-[10px] uppercase tracking-widest2 text-bone-500">
+            Scan to open on your phone
+          </span>
+        </div>
       </motion.div>
 
       <div className="relative z-10 mx-auto mt-20 max-w-3xl text-center text-xs leading-relaxed text-bone-500">
