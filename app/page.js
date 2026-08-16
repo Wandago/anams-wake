@@ -8,10 +8,12 @@ import Trailer from "@/components/Trailer";
 import Footer from "@/components/Footer";
 import SoundToggle from "@/components/SoundToggle";
 import ScrollDots from "@/components/ScrollDots";
+import EntryGate from "@/components/EntryGate";
 
 export default function Home() {
   return (
     <main className="relative">
+      <EntryGate />
       <Nav />
       <ScrollDots />
       <Hero />

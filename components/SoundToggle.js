@@ -170,6 +170,16 @@ export default function SoundToggle() {
     };
   }, []);
 
+  // The entry gate dispatches this once the visitor has completed the
+  // ritual (a real click already happened, so AudioContext is unlockable).
+  useEffect(() => {
+    const handleEnter = () => {
+      if (!on) toggle();
+    };
+    window.addEventListener("anams-wake:enter", handleEnter);
+    return () => window.removeEventListener("anams-wake:enter", handleEnter);
+  }, [on]);
+
   return (
     <button
       type="button"
