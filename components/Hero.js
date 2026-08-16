@@ -52,7 +52,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="mb-6 rounded-full border border-ember-500/40 px-4 py-1.5 text-[11px] uppercase tracking-widest2 text-ember-400"
+          className="mb-4 rounded-full border border-ember-500/40 px-4 py-1.5 text-[11px] uppercase tracking-widest2 text-ember-400 sm:mb-6"
         >
           Now Premiering
         </motion.span>
@@ -61,7 +61,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4 }}
-          className="text-shadow-glow font-display text-6xl font-light tracking-wide text-bone-100 sm:text-7xl md:text-8xl"
+          className="text-shadow-glow font-display text-5xl font-light tracking-wide text-bone-100 sm:text-7xl md:text-8xl"
         >
           Anam&rsquo;s Wake
         </motion.h1>
@@ -70,7 +70,7 @@ export default function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.9 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-2.5"
+          className="mt-4 flex flex-wrap items-center justify-center gap-2.5 sm:mt-6"
         >
           {GENRES.map((g) => (
             <span
@@ -86,7 +86,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.0 }}
-          className="mt-8 font-display text-xl italic text-ember-400 sm:text-2xl"
+          className="mt-5 font-display text-lg italic text-ember-400 sm:mt-8 sm:text-2xl"
         >
           &ldquo;Death isn&rsquo;t the end, it&rsquo;s a negotiation.&rdquo;
         </motion.p>
@@ -95,7 +95,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.15 }}
-          className="mt-5 max-w-xl text-balance font-body text-base leading-relaxed text-bone-300 sm:text-lg"
+          className="mt-3 max-w-xl text-balance font-body text-sm leading-relaxed text-bone-300 sm:mt-5 sm:text-lg"
         >
           In a world where Death can be summoned to negotiate for the dead, a
           young professional mourner is sent to guide a wealthy family
@@ -107,7 +107,7 @@ export default function Hero() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 1.35 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-4"
+          className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:mt-10 sm:gap-4"
         >
           <a
             href={TICKETS_URL}
@@ -130,7 +130,7 @@ export default function Hero() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1, delay: 1.8 }}
-        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-bone-500"
+        className="absolute bottom-6 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-bone-500 sm:flex"
       >
         <span className="text-[10px] uppercase tracking-widest2">Scroll</span>
         <span className="h-8 w-px animate-drift bg-gradient-to-b from-bone-500 to-transparent" />
