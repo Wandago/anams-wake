@@ -86,7 +86,7 @@ export default function Poster() {
     const geometry = new THREE.PlaneGeometry(1, 1, 24, 28);
     const material = makeImagePlaneMaterial({
       uVignette: 0.45,
-      uColdness: 0.55,
+      uColdness: 0.32,
       uFeather: 0.04,
       uEdgeMelt: 0,
       uIdle: 0.5,

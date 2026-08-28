@@ -17,11 +17,11 @@ export default function Home() {
       <Nav />
       <ScrollDots />
       <Hero />
-      <Poster />
       <DeathComes />
       <Cast />
       <Gallery />
       <Trailer />
+      <Poster />
       <Footer />
       <SoundToggle />
     </main>

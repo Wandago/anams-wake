@@ -175,7 +175,7 @@ export default function Hero() {
     <section
       ref={ref}
       id="hero"
-      className="relative flex h-[100svh] min-h-[640px] w-full snap-start snap-always items-center justify-center overflow-hidden bg-void-950"
+      className="relative flex h-[100svh] min-h-[640px] w-full snap-start items-center justify-center overflow-hidden bg-void-950"
     >
       <motion.div style={{ y: bgY }} className="absolute inset-0">
         <Image

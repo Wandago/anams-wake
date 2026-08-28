@@ -45,7 +45,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${display.variable} ${body.variable} snap-y snap-mandatory`}
+      className={`${display.variable} ${body.variable} snap-y snap-proximity`}
     >
       <body className="grain font-body antialiased">
         <div className="vignette" />

@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 
 const SECTIONS = [
   { id: "hero", label: "Home" },
-  { id: "poster", label: "Poster" },
   { id: "story", label: "Story" },
   { id: "cast", label: "Cast" },
   { id: "gallery", label: "Gallery" },
   { id: "trailer", label: "Trailer" },
+  { id: "poster", label: "Poster" },
   { id: "tickets", label: "Tickets" },
 ];
 
