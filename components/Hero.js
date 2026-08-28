@@ -5,10 +5,12 @@ import Image from "next/image";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import * as THREE from "three";
 import {
+  damp,
   fitPixelCamera,
   hasWebGL,
   loadPlaneTexture,
   makeImagePlaneMaterial,
+  pageDepth,
 } from "./gl/imagePlane";
 import EmberField from "./EmberField";
 
@@ -73,7 +75,12 @@ export default function Hero() {
 
     // Backdrop plane, oversized so the parallax shift never reveals an edge.
     const geometry = new THREE.PlaneGeometry(1, 1, 20, 20);
-    const material = makeImagePlaneMaterial({ uVignette: 0, uBow: 0.5 });
+    const material = makeImagePlaneMaterial({
+      uVignette: 0,
+      uIdle: 1,
+      uFeather: 0.14,
+      uColdness: 1,
+    });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.frustumCulled = false;
     mesh.visible = false;
@@ -96,43 +103,39 @@ export default function Hero() {
     });
     const readyFallback = setTimeout(() => alive && setGlReady(true), 2000);
 
-    let lastScrollY = window.scrollY;
-    let scrollVel = 0;
-    const onScroll = () => {
-      const y = window.scrollY;
-      scrollVel += y - lastScrollY;
-      lastScrollY = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", resize);
 
     let onScreen = true;
     let frameId = null;
+    let elapsed = 0;
+    let depthSmooth = pageDepth();
     const clock = new THREE.Clock();
 
     const render = () => {
       frameId = requestAnimationFrame(render);
-      const t = clock.getElapsedTime();
-      scrollVel *= 0.82;
-      const vel = THREE.MathUtils.clamp(scrollVel * 0.01, -1, 1);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      depthSmooth = damp(depthSmooth, pageDepth(), 2.2, dt);
       const p = Math.min(1, Math.max(0, progress.get()));
 
       const planeW = width * 1.15;
-      const planeH = height * 1.28;
+      const planeH = height * 1.3;
       mesh.scale.set(planeW, planeH, 1);
-      mesh.position.y = -(p * 0.18 * height);
+      // slow parallax sink as you leave the world of the living
+      mesh.position.y = -(p * 0.16 * height);
 
       const u = material.uniforms;
       u.uPlaneRes.value.set(planeW, planeH);
-      u.uTime.value = t;
-      u.uVelocity.value += (vel - u.uVelocity.value) * 0.2;
-      u.uAlpha.value +=
-        ((mesh.userData.loaded ? 0.42 : 0) - u.uAlpha.value) * 0.06;
+      u.uTime.value = elapsed;
+      u.uDepth.value = depthSmooth;
+      // the backdrop recedes into the veil as the hero scrolls away
+      const alphaTarget = mesh.userData.loaded ? 0.46 - 0.24 * p : 0;
+      u.uAlpha.value = damp(u.uAlpha.value, alphaTarget, 2.5, dt);
       mesh.visible = u.uAlpha.value > 0.005;
 
       renderer.render(scene, camera);
 
-      if (!onScreen && Math.abs(scrollVel) < 0.4) {
+      if (!onScreen) {
         cancelAnimationFrame(frameId);
         frameId = null;
         renderer.clear();
@@ -140,10 +143,7 @@ export default function Hero() {
     };
 
     const start = () => {
-      if (frameId == null && alive) {
-        lastScrollY = window.scrollY;
-        render();
-      }
+      if (frameId == null && alive) render();
     };
 
     const io = new IntersectionObserver(
@@ -161,7 +161,6 @@ export default function Hero() {
       clearTimeout(readyFallback);
       if (frameId != null) cancelAnimationFrame(frameId);
       io.disconnect();
-      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", resize);
       material.uniforms.uTexture.value?.dispose();
       material.dispose();

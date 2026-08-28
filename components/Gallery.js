@@ -5,10 +5,12 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import * as THREE from "three";
 import {
+  damp,
   fitPixelCamera,
   hasWebGL,
   loadPlaneTexture,
   makeImagePlaneMaterial,
+  pageDepth,
 } from "./gl/imagePlane";
 
 const PHOTOS = [
@@ -77,7 +79,11 @@ export default function Gallery() {
     let loadedCount = 0;
 
     const planes = PHOTOS.map((photo) => {
-      const material = makeImagePlaneMaterial();
+      const material = makeImagePlaneMaterial({
+        uFeather: 0.14,
+        uIdle: 0.6,
+        uVignette: 0.68,
+      });
       const mesh = new THREE.Mesh(geometry, material);
       mesh.frustumCulled = false;
       mesh.visible = false;
@@ -132,18 +138,12 @@ export default function Gallery() {
       });
     });
 
-    let lastScrollY = window.scrollY;
-    let scrollVel = 0;
-    const onScroll = () => {
-      const y = window.scrollY;
-      scrollVel += y - lastScrollY;
-      lastScrollY = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", resize);
 
     let onScreen = false;
     let frameId = null;
+    let elapsed = 0;
+    let depthSmooth = pageDepth();
     const clock = new THREE.Clock();
 
     const syncPlane = (mesh, material, el) => {
@@ -157,9 +157,9 @@ export default function Gallery() {
 
     const render = () => {
       frameId = requestAnimationFrame(render);
-      const t = clock.getElapsedTime();
-      scrollVel *= 0.82;
-      const vel = THREE.MathUtils.clamp(scrollVel * 0.008, -1.2, 1.2);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      depthSmooth = damp(depthSmooth, pageDepth(), 2.2, dt);
 
       planes.forEach(({ mesh, material }, i) => {
         const el = itemRefs.current[i];
@@ -171,16 +171,16 @@ export default function Gallery() {
         if (!visible) return;
 
         const u = material.uniforms;
-        u.uTime.value = t;
-        u.uVelocity.value += (vel - u.uVelocity.value) * 0.25;
-        u.uHover.value += ((hoverIndex === i ? 1 : 0) - u.uHover.value) * 0.12;
-        if (hoverIndex === i) u.uHoverUv.value.lerp(hoverUv, 0.15);
-        u.uAlpha.value += (1 - u.uAlpha.value) * 0.08;
+        u.uTime.value = elapsed;
+        u.uDepth.value = depthSmooth;
+        u.uHover.value = damp(u.uHover.value, hoverIndex === i ? 1 : 0, 6, dt);
+        if (hoverIndex === i) u.uHoverUv.value.lerp(hoverUv, 0.12);
+        u.uAlpha.value = damp(u.uAlpha.value, 1, 3, dt);
       });
 
       renderer.render(scene, camera);
 
-      if (!onScreen && Math.abs(scrollVel) < 0.4) {
+      if (!onScreen) {
         cancelAnimationFrame(frameId);
         frameId = null;
         renderer.clear();
@@ -188,10 +188,7 @@ export default function Gallery() {
     };
 
     const start = () => {
-      if (frameId == null && alive) {
-        lastScrollY = window.scrollY;
-        render();
-      }
+      if (frameId == null && alive) render();
     };
 
     const io = new IntersectionObserver(
@@ -209,7 +206,6 @@ export default function Gallery() {
       clearTimeout(readyFallback);
       if (frameId != null) cancelAnimationFrame(frameId);
       io.disconnect();
-      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", resize);
       cellCleanups.forEach((fn) => fn());
       planes.forEach(({ mesh, material }) => {

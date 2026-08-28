@@ -5,10 +5,12 @@ import Image from "next/image";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import * as THREE from "three";
 import {
+  damp,
   fitPixelCamera,
   hasWebGL,
   loadPlaneTexture,
   makeImagePlaneMaterial,
+  pageDepth,
 } from "./gl/imagePlane";
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -31,9 +33,9 @@ export default function Poster() {
     offset: ["start start", "end end"],
   });
   const progress = useSpring(scrollYProgress, {
-    stiffness: 300,
-    damping: 40,
-    mass: 0.4,
+    stiffness: 150,
+    damping: 42,
+    mass: 0.5,
   });
   const glowOpacity = useTransform(progress, [0, 0.5, 1], [0.35, 1, 0.7]);
   const labelOpacity = useTransform(progress, [0.55, 0.8], [0, 1]);
@@ -82,7 +84,13 @@ export default function Poster() {
     resize();
 
     const geometry = new THREE.PlaneGeometry(1, 1, 24, 28);
-    const material = makeImagePlaneMaterial({ uVignette: 0.5, uBow: 0.7 });
+    const material = makeImagePlaneMaterial({
+      uVignette: 0.45,
+      uColdness: 0.55,
+      uFeather: 0.04,
+      uEdgeMelt: 0,
+      uIdle: 0.5,
+    });
     const mesh = new THREE.Mesh(geometry, material);
     mesh.frustumCulled = false;
     mesh.visible = false;
@@ -120,25 +128,19 @@ export default function Poster() {
     sticky.addEventListener("pointermove", onPointerMove);
     sticky.addEventListener("pointerleave", onPointerLeave);
 
-    let lastScrollY = window.scrollY;
-    let scrollVel = 0;
-    const onScroll = () => {
-      const y = window.scrollY;
-      scrollVel += y - lastScrollY;
-      lastScrollY = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", resize);
 
     let onScreen = false;
     let frameId = null;
+    let elapsed = 0;
+    let depthSmooth = pageDepth();
     const clock = new THREE.Clock();
 
     const render = () => {
       frameId = requestAnimationFrame(render);
-      const t = clock.getElapsedTime();
-      scrollVel *= 0.82;
-      const vel = THREE.MathUtils.clamp(scrollVel * 0.01, -1.2, 1.2);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      elapsed += dt;
+      depthSmooth = damp(depthSmooth, pageDepth(), 2.2, dt);
       const p = clamp01(progress.get());
 
       const base = frameEl.getBoundingClientRect();
@@ -147,21 +149,22 @@ export default function Poster() {
       mesh.position.x = base.left + base.width / 2 - width / 2;
       mesh.position.y = -(base.top + base.height / 2 - height / 2);
 
-      pointer.lerp(pointerTarget, 0.08);
-      mesh.rotation.z = (posterTilt(p) * Math.PI) / 180 + pointer.x * 0.05;
-      mesh.rotation.y = pointer.x * 0.14;
-      mesh.rotation.x = pointer.y * 0.1;
+      const pl = 1 - Math.exp(-4 * dt);
+      pointer.lerp(pointerTarget, pl);
+      mesh.rotation.z = (posterTilt(p) * Math.PI) / 180 + pointer.x * 0.03;
+      mesh.rotation.y = pointer.x * 0.1;
+      mesh.rotation.x = pointer.y * 0.07;
 
       const u = material.uniforms;
       u.uPlaneRes.value.set(base.width * s, base.height * s);
-      u.uTime.value = t;
-      u.uVelocity.value += (vel - u.uVelocity.value) * 0.25;
-      u.uAlpha.value += ((mesh.userData.loaded ? 1 : 0) - u.uAlpha.value) * 0.08;
+      u.uTime.value = elapsed;
+      u.uDepth.value = depthSmooth;
+      u.uAlpha.value = damp(u.uAlpha.value, mesh.userData.loaded ? 1 : 0, 3, dt);
       mesh.visible = u.uAlpha.value > 0.01;
 
       renderer.render(scene, camera);
 
-      if (!onScreen && Math.abs(scrollVel) < 0.4) {
+      if (!onScreen) {
         cancelAnimationFrame(frameId);
         frameId = null;
         renderer.clear();
@@ -169,10 +172,7 @@ export default function Poster() {
     };
 
     const start = () => {
-      if (frameId == null && alive) {
-        lastScrollY = window.scrollY;
-        render();
-      }
+      if (frameId == null && alive) render();
     };
 
     const io = new IntersectionObserver(
@@ -190,7 +190,6 @@ export default function Poster() {
       clearTimeout(readyFallback);
       if (frameId != null) cancelAnimationFrame(frameId);
       io.disconnect();
-      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", resize);
       sticky.removeEventListener("pointermove", onPointerMove);
       sticky.removeEventListener("pointerleave", onPointerLeave);
