@@ -129,6 +129,9 @@ export default function EntryGate() {
   };
 
   const handleEnter = async () => {
+    // Fire synchronously, still inside the tap, so SoundToggle's first
+    // audio.play() runs within the user gesture (required by iOS Safari).
+    window.dispatchEvent(new Event("anams-wake:unlock"));
     const ctx = ensureAudio();
     if (ctx.state === "suspended") await ctx.resume();
     playToll();
@@ -147,6 +150,10 @@ export default function EntryGate() {
   };
 
   const handleSkip = () => {
+    // Still a tap — bless the element and bring the film bed straight up,
+    // since Skip drops the visitor onto the site with no ritual.
+    window.dispatchEvent(new Event("anams-wake:unlock"));
+    window.dispatchEvent(new Event("anams-wake:enter"));
     try {
       sessionStorage.setItem(STORAGE_KEY, "1");
     } catch {
