@@ -138,8 +138,12 @@ export default function EntryGate() {
   const handleChoice = (offering) => {
     setChoice(offering);
     playAccept();
-    setTimeout(() => setStage("leaving"), 1600);
-    setTimeout(finish, 2700);
+    // Hold the response on screen long enough to actually read it (the
+    // longest is ~20 words) before the gate fades away. The +1100 matches
+    // the "leaving" fade duration below so finish() fires as it lands.
+    const readMs = reducedMotionRef.current ? 4200 : 5200;
+    setTimeout(() => setStage("leaving"), readMs);
+    setTimeout(finish, readMs + 1100);
   };
 
   const handleSkip = () => {
