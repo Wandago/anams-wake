@@ -1,8 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useScroll, useSpring, useTransform } from "motion/react";
+import * as THREE from "three";
+import {
+  fitPixelCamera,
+  hasWebGL,
+  loadPlaneTexture,
+  makeImagePlaneMaterial,
+} from "./gl/imagePlane";
 import EmberField from "./EmberField";
 
 const GENRES = ["Drama", "Mystery", "Thriller"];
@@ -10,6 +17,9 @@ const TICKETS_URL = "https://centurycinemax.co.ke/movie/show/garden/anam%27s_wak
 
 export default function Hero() {
   const ref = useRef(null);
+  const mountRef = useRef(null);
+  const [glReady, setGlReady] = useState(false);
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -24,6 +34,144 @@ export default function Hero() {
   const contentOpacity = useTransform(progress, [0, 0.8], [1, 0]);
   const contentY = useTransform(progress, [0, 1], [0, -60]);
 
+  useEffect(() => {
+    const mount = mountRef.current;
+    const section = ref.current;
+    if (!mount || !section) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!hasWebGL()) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.className = "block h-full w-full";
+    mount.appendChild(canvas);
+
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    } catch {
+      mount.removeChild(canvas);
+      return;
+    }
+
+    let alive = true;
+    let width = section.clientWidth;
+    let height = section.clientHeight;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, width / height, 1, 3000);
+
+    const resize = () => {
+      width = section.clientWidth;
+      height = section.clientHeight;
+      renderer.setSize(width, height, false);
+      fitPixelCamera(camera, width, height);
+    };
+    resize();
+
+    // Backdrop plane, oversized so the parallax shift never reveals an edge.
+    const geometry = new THREE.PlaneGeometry(1, 1, 20, 20);
+    const material = makeImagePlaneMaterial({ uVignette: 0, uBow: 0.5 });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.frustumCulled = false;
+    mesh.visible = false;
+    scene.add(mesh);
+
+    const loader = new THREE.TextureLoader();
+    loadPlaneTexture(loader, "/still-1.jpg", (tex) => {
+      if (!alive) {
+        tex.dispose();
+        return;
+      }
+      material.uniforms.uTexture.value = tex;
+      const img = tex.image;
+      material.uniforms.uImageRes.value.set(
+        img.naturalWidth || img.width,
+        img.naturalHeight || img.height
+      );
+      mesh.userData.loaded = true;
+      setGlReady(true);
+    });
+    const readyFallback = setTimeout(() => alive && setGlReady(true), 2000);
+
+    let lastScrollY = window.scrollY;
+    let scrollVel = 0;
+    const onScroll = () => {
+      const y = window.scrollY;
+      scrollVel += y - lastScrollY;
+      lastScrollY = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", resize);
+
+    let onScreen = true;
+    let frameId = null;
+    const clock = new THREE.Clock();
+
+    const render = () => {
+      frameId = requestAnimationFrame(render);
+      const t = clock.getElapsedTime();
+      scrollVel *= 0.82;
+      const vel = THREE.MathUtils.clamp(scrollVel * 0.01, -1, 1);
+      const p = Math.min(1, Math.max(0, progress.get()));
+
+      const planeW = width * 1.15;
+      const planeH = height * 1.28;
+      mesh.scale.set(planeW, planeH, 1);
+      mesh.position.y = -(p * 0.18 * height);
+
+      const u = material.uniforms;
+      u.uPlaneRes.value.set(planeW, planeH);
+      u.uTime.value = t;
+      u.uVelocity.value += (vel - u.uVelocity.value) * 0.2;
+      u.uAlpha.value +=
+        ((mesh.userData.loaded ? 0.42 : 0) - u.uAlpha.value) * 0.06;
+      mesh.visible = u.uAlpha.value > 0.005;
+
+      renderer.render(scene, camera);
+
+      if (!onScreen && Math.abs(scrollVel) < 0.4) {
+        cancelAnimationFrame(frameId);
+        frameId = null;
+        renderer.clear();
+      }
+    };
+
+    const start = () => {
+      if (frameId == null && alive) {
+        lastScrollY = window.scrollY;
+        render();
+      }
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        onScreen = entries[0].isIntersecting;
+        if (onScreen) start();
+      },
+      { rootMargin: "200px 0px" }
+    );
+    io.observe(section);
+    start();
+
+    return () => {
+      alive = false;
+      clearTimeout(readyFallback);
+      if (frameId != null) cancelAnimationFrame(frameId);
+      io.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", resize);
+      material.uniforms.uTexture.value?.dispose();
+      material.dispose();
+      geometry.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss?.();
+      if (mount.contains(canvas)) mount.removeChild(canvas);
+    };
+  }, [progress]);
+
   return (
     <section
       ref={ref}
@@ -37,9 +185,16 @@ export default function Hero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover opacity-30"
+          className={`object-cover transition-opacity duration-1000 ${
+            glReady ? "opacity-0" : "opacity-30"
+          }`}
         />
       </motion.div>
+      <div
+        ref={mountRef}
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+      />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(138,35,49,0.14),transparent_60%)]" />
       <EmberField />
       <div className="absolute inset-0 bg-gradient-to-b from-void-950/70 via-void-950/50 to-void-950" />

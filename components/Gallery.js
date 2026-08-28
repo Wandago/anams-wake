@@ -4,6 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import * as THREE from "three";
+import {
+  fitPixelCamera,
+  hasWebGL,
+  loadPlaneTexture,
+  makeImagePlaneMaterial,
+} from "./gl/imagePlane";
 
 const PHOTOS = [
   { src: "/still-3.jpg", tag: "Still" },
@@ -15,74 +21,11 @@ const PHOTOS = [
   { src: "/bts-3.jpg", tag: "Behind the Scenes" },
 ];
 
-// Each grid photo is drawn as a three.js plane synced to its DOM cell.
-// The plane bows and smears with scroll velocity, splits into RGB on a
-// hard scroll, and pushes toward the viewer under the cursor. The DOM
-// grid stays put underneath for layout, alt text, lazy-loading and the
-// no-WebGL / reduced-motion fallback.
-const vertexShader = /* glsl */ `
-  uniform float uVelocity;
-  uniform float uTime;
-  uniform float uHover;
-  uniform vec2 uHoverUv;
-  varying vec2 vUv;
-
-  void main() {
-    vUv = uv;
-    vec3 pos = position;
-    float wave = sin(uv.x * 3.14159265) * sin(uv.y * 3.14159265);
-    pos.z += wave * uVelocity * 26.0;
-    pos.z += sin(uTime * 0.7 + uv.y * 5.0) * 1.4;
-    float d = distance(uv, uHoverUv);
-    pos.z += uHover * smoothstep(0.55, 0.0, d) * 32.0;
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-  }
-`;
-
-const fragmentShader = /* glsl */ `
-  precision highp float;
-  uniform sampler2D uTexture;
-  uniform vec2 uImageRes;
-  uniform vec2 uPlaneRes;
-  uniform float uVelocity;
-  uniform float uHover;
-  uniform vec2 uHoverUv;
-  uniform float uAlpha;
-  varying vec2 vUv;
-
-  void main() {
-    // object-fit: cover
-    vec2 ratio = vec2(
-      min((uPlaneRes.x / uPlaneRes.y) / (uImageRes.x / uImageRes.y), 1.0),
-      min((uPlaneRes.y / uPlaneRes.x) / (uImageRes.y / uImageRes.x), 1.0)
-    );
-    vec2 uv = vec2(
-      vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
-      vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
-    );
-
-    // zoom slightly toward the cursor on hover
-    uv = mix(uv, uHoverUv + (uv - uHoverUv) * 0.86, uHover);
-
-    // drag the pixels along the scroll direction
-    uv.y += uVelocity * 0.07 * (1.0 - abs(vUv.x - 0.5));
-
-    // chromatic split on fast scroll (and a touch on hover)
-    float ca = abs(uVelocity) * 0.03 + uHover * 0.006;
-    float r = texture2D(uTexture, uv + vec2(ca, 0.0)).r;
-    float g = texture2D(uTexture, uv).g;
-    float b = texture2D(uTexture, uv - vec2(ca, 0.0)).b;
-    vec3 col = vec3(r, g, b);
-
-    // vignette + hover lift
-    float vig = smoothstep(1.15, 0.35, distance(vUv, vec2(0.5)));
-    col *= mix(0.72, 1.0, vig);
-    col += uHover * smoothstep(0.6, 0.0, distance(vUv, uHoverUv)) * 0.10;
-
-    gl_FragColor = vec4(col, uAlpha);
-  }
-`;
-
+// Each grid photo is drawn as a three.js plane synced to its DOM cell: it
+// bows and pixel-smears with scroll velocity, splits into RGB on a hard
+// scroll, and pushes toward the cursor on hover. The DOM grid stays put
+// underneath for layout, alt text, lazy-loading and the no-WebGL /
+// reduced-motion fallback.
 export default function Gallery() {
   const sectionRef = useRef(null);
   const mountRef = useRef(null);
@@ -95,6 +38,7 @@ export default function Gallery() {
     if (!mount || !section) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!hasWebGL()) return;
 
     // Fresh canvas per mount — reusing a JSX <canvas> breaks under React
     // StrictMode's double-invoke (the element keeps its first, now-disposed
@@ -114,64 +58,36 @@ export default function Gallery() {
     let alive = true;
     let width = window.innerWidth;
     let height = window.innerHeight;
-    const dprCap = width < 640 ? 1.5 : 2;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, dprCap));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
-    const perspective = 1000;
     const camera = new THREE.PerspectiveCamera(50, width / height, 1, 3000);
-    camera.position.set(0, 0, perspective);
-
-    const setCamera = () => {
-      camera.fov = (180 * (2 * Math.atan(height / 2 / perspective))) / Math.PI;
-      camera.aspect = width / height;
-      camera.updateProjectionMatrix();
-    };
 
     const resize = () => {
       width = window.innerWidth;
       height = window.innerHeight;
       renderer.setSize(width, height, false);
-      setCamera();
+      fitPixelCamera(camera, width, height);
     };
     resize();
 
-    const geometry = new THREE.PlaneGeometry(1, 1, 28, 28);
+    const geometry = new THREE.PlaneGeometry(1, 1, 18, 18);
     const loader = new THREE.TextureLoader();
     let loadedCount = 0;
 
     const planes = PHOTOS.map((photo) => {
-      const material = new THREE.ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        transparent: true,
-        depthTest: false,
-        depthWrite: false,
-        uniforms: {
-          uTexture: { value: null },
-          uImageRes: { value: new THREE.Vector2(1, 1) },
-          uPlaneRes: { value: new THREE.Vector2(1, 1) },
-          uVelocity: { value: 0 },
-          uTime: { value: 0 },
-          uHover: { value: 0 },
-          uHoverUv: { value: new THREE.Vector2(0.5, 0.5) },
-          uAlpha: { value: 0 },
-        },
-      });
+      const material = makeImagePlaneMaterial();
       const mesh = new THREE.Mesh(geometry, material);
       mesh.frustumCulled = false;
       mesh.visible = false;
       scene.add(mesh);
 
-      loader.load(photo.src, (tex) => {
+      loadPlaneTexture(loader, photo.src, (tex) => {
         if (!alive) {
           tex.dispose();
           return;
         }
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.minFilter = THREE.LinearFilter;
-        tex.generateMipmaps = false;
         material.uniforms.uTexture.value = tex;
         const img = tex.image;
         material.uniforms.uImageRes.value.set(

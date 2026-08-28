@@ -71,9 +71,14 @@ export default function EmberField() {
     scene.add(points);
 
     let frameId;
+    let onScreen = true;
     let t = 0;
 
     const animate = () => {
+      if (!onScreen) {
+        frameId = undefined;
+        return;
+      }
       if (!prefersReducedMotion) {
         t += 0.006;
         const pos = geometry.attributes.position.array;
@@ -101,8 +106,18 @@ export default function EmberField() {
     };
     window.addEventListener("resize", handleResize);
 
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        onScreen = entry.isIntersecting;
+        if (onScreen && frameId === undefined) animate();
+      },
+      { rootMargin: "150px 0px" }
+    );
+    io.observe(mount);
+
     return () => {
       cancelAnimationFrame(frameId);
+      io.disconnect();
       window.removeEventListener("resize", handleResize);
       geometry.dispose();
       material.dispose();
